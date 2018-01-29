@@ -6,7 +6,7 @@ def get_options():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--script_dir", type=str,
-                        help="director where qsub shell scripts stored")
+                        help="directory where qsub shell scripts stored")
     parser.add_argument("-t", "--debug", action="store_true",
                         help="debug mode for testing")
     return parser.parse_args()

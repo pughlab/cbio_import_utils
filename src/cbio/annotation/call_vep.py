@@ -5,19 +5,20 @@ from string import Template
 def get_options():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--root", type=str,
-                        help="root directory")
-    parser.add_argument("-i", "--input", type=str,
-                        help="input vcf directory name e.g mutect")
-    parser.add_argument("-o", "--output", type=str,
-                        help="vep output directory name e.g. VEP/output")
-    parser.add_argument("-s", "--script", type=str,
-                        help="directory to store qsub script e.g. VEP/scripts")
-    parser.add_argument("-f", "--fasta", type=str,
-                        help="reference genome fasta file including path")
-    parser.add_argument("-c", "--cache", type=str,
-                        help="reference genome cache directory")
-    parser.add_argument("-v", "--vep", type=int,
+    parser.add_argument("-i", "--input", type=str, required=True,
+                        help="input vcf directory")
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help="vep output directory")
+    parser.add_argument("-s", "--script_dir", type=str, required=False,
+                        help="directory to store qsub script ",
+                        default='vep_script')
+    parser.add_argument("-f", "--fasta", type=str, required=False,
+                        help="reference genome fasta file including path",
+                        default='/mnt/work1/users/pughlab/references/VEP_fasta/83_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa')
+    parser.add_argument("-c", "--cache", type=str, required=False,
+                        help="reference genome cache directory",
+                        default='/mnt/work1/users/pughlab/references/VEP_fasta/87_GRCh37')
+    parser.add_argument("-v", "--vep", type=int, required=False,
                         help="VEP version e.g 87", default=87)
     parser.add_argument("-t", "--debug", action="store_true",
                         help="debug mode for testing")
@@ -37,31 +38,33 @@ def create_script(sh_file, cmd, version):
 
 def main():
     args = get_options()
-    print (args)
-    root_dir = args.root
-    print (root_dir)
-    print (args.vep)
-    s = Template('variant_effect_predictor.pl --merged  --offline  \
+    if args.debug:
+        print (args)
+
+    s = Template('variant_effect_predictor.pl \
+    --merged  --offline  \
     --dir_cache  $cache_dir \
-    --species homo_sapiens --format vcf \
+    --species homo_sapiens \
+    --format vcf \
     --fasta  $fasta \
     --everything --force_overwrite  --vcf  \
     -i $infile \
     -o $outfile')
 
-    for subdir, dirs, files in os.walk(os.path.join(root_dir, args.input)):
+    for subdir, dirs, files in os.walk(args.input):
         for file in files:
-            print (file)
-            input_file = os.path.join(args.root, args.input, file)
-            out_file = os.path.join(args.root, args.output, file.replace('vcf', 'vep.vcf'))
-            sh_file = os.path.join(args.root, args.script, file.replace('vcf','sh'))
+            if not file.endwith('vcf'): continue
+            input_file = os.path.join(args.input, file)
+            out_file = os.path.join(args.output, file.replace('vcf', 'vep.vcf'))
+            sh_file = os.path.join(args.output, args.script_dir, file.replace('vcf','sh'))
 
             d = dict(cache_dir=args.cache,
                      fasta=args.fasta,
                      infile=input_file,
                      outfile=out_file)
             cmd = s.substitute(d)
-            print (cmd)
+            if args.debug:
+                print (cmd)
             create_script(sh_file, cmd, args.vep)
 
 if __name__ == "__main__":

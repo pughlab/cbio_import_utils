@@ -44,9 +44,6 @@ def get_sample_IDs(sample_name, separator):
 def main():
     args = get_options()
     print(args)
-    tool_center = "mutec"
-    tmp_dir='/Users/kelsyzhu/workspace/data/importer/low_grade'
-    vep_dir='/Users/kelsyzhu/workspace/data/importer/low_grade/VEP'
 
     s = Template('perl /mnt/work1/users/pughlab/cBioportal_import/import_wrapper/scripts/v1.6.12/vcf2maf-1.6.12/vcf2maf.pl \
     --vep-data $vep_data \
@@ -63,10 +60,13 @@ def main():
     --filter-vcf /mnt/work1/users/pughlab/cBioportal_import/vep_plugin_dir/ExAC.r0.3.sites.minus_somatic.vcf.gz \
     --output-maf $maf')
 
+    vep_dir = args.input
+    tmp_dir = args.cwd
+    ouput_dir = args.output
     for subdir, dirs, files in os.walk(vep_dir):
         for file in files:
             if file.endswith("vep.vcf"):
-                maf_file = os.path.join(args.output, "{}.maf".format(file.split(".")[0]))
+                maf_file = os.path.join(ouput_dir, "{}.maf".format(file.replace('vep.vcf','maf')))
                 if os.path.exists(maf_file): continue
                 vep_file = os.path.join(vep_dir, file)
                 print (vep_file)
@@ -80,7 +80,7 @@ def main():
                         vep_path=args.vep_path,
                         fasta=args.fasta,
                         ncbi_build=args.ncbi_build,
-                        tmp_dir=args.cwd,
+                        tmp_dir=tmp_dir,
                         vcf_TUMOR=args.vcf_TUMOR,
                         vcf_NORMAL=args.vcf_NORMAL,
                         sample_id=sample_id,
@@ -90,7 +90,7 @@ def main():
                         maf=maf_file)
                 cmd = s.substitute(d)
                 print (cmd)
-                out_file = os.path.join(tmp_dir,"maf_script","{}.sh".format(file.split(".")[0]))
+                out_file = os.path.join(ouput_dir,"maf_script","{}.sh".format(file.replace('vep.vcf', 'sh')))
                 with open(out_file, 'w') as of:
                     of.write("#!/bin/bash\n")
                     of.write("#$ -cwd\n")

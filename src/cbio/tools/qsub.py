@@ -23,3 +23,6 @@ def main():
                 print (cmd)
                 if not args.debug:
                     os.system(cmd)
+
+if __name__ == "__main__":
+    main()

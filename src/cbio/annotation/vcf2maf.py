@@ -53,6 +53,7 @@ def get_sampleIDs_from_header(vcf_file):
         return sample_id, normal_id
     except:
         return None, None
+
 def main():
     args = get_options()
     print(args)

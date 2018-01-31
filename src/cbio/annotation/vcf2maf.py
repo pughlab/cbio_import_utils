@@ -42,7 +42,7 @@ def get_sampleIDs_from_filename(sample_name, separator):
     except:
         return None, None
 
-def get_sampleID_from_head(vcf_file):
+def get_sampleIDs_from_header(vcf_file):
     try:
         p = subprocess.Popen(['grep', '#CHROM', vcf_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         parts = p.communicate()[0].split("\t")
@@ -84,7 +84,7 @@ def main():
                 print (vep_file)
                 sample_id, normal_id = get_sampleIDs_from_filename(file.split(".")[0], args.separator)
                 if not normal_id:
-                    sample_id, normal_id = get_sampleID_from_head(vep_file)
+                    sample_id, normal_id = get_sampleIDs_from_header(vep_file)
                 if not normal_id: continue
                 print ("sample ID: {}".format(sample_id))
                 print ("matched normal ID: {}".format(normal_id))

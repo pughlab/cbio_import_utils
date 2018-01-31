@@ -1,6 +1,7 @@
 import os
 import argparse
 from string import Template
+import subprocess
 
 def get_options():
 
@@ -35,12 +36,23 @@ def get_options():
                         help="debug mode for testing")
     return parser.parse_args()
 
-def get_sample_IDs(sample_name, separator):
+def get_sampleIDs_from_filename(sample_name, separator):
     try:
         return sample_name.strip().split(separator)
     except:
         return None, None
 
+def get_sampleID_from_head(vcf_file):
+    try:
+        p = subprocess.Popen(['grep', '#CHROM', vcf_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        parts = p.communicate()[0].split("\t")
+        normal_id = parts[-1].replace("\n", "")
+        sample_id = parts[-2]
+        print("sample ID: %s" % sample_id)
+        print("matched normal ID: %s" % normal_id)
+        return sample_id, normal_id
+    except:
+        return None, None
 def main():
     args = get_options()
     print(args)
@@ -66,12 +78,14 @@ def main():
     for subdir, dirs, files in os.walk(vep_dir):
         for file in files:
             if file.endswith("vep.vcf"):
-                maf_file = os.path.join(ouput_dir, "{}.maf".format(file.replace('vep.vcf','maf')))
+                maf_file = os.path.join(ouput_dir, "{}".format(file.replace('vep.vcf','maf')))
                 if os.path.exists(maf_file): continue
                 vep_file = os.path.join(vep_dir, file)
                 print (vep_file)
-                sample_id, normal_id = get_sample_IDs(file.split(".")[0], args.separator)
-                if not sample_id: continue
+                sample_id, normal_id = get_sampleIDs_from_filename(file.split(".")[0], args.separator)
+                if not normal_id:
+                    sample_id, normal_id = get_sampleID_from_head(vep_file)
+                if not normal_id: continue
                 print ("sample ID: {}".format(sample_id))
                 print ("matched normal ID: {}".format(normal_id))
 

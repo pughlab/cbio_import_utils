@@ -53,7 +53,7 @@ def main():
 
     for subdir, dirs, files in os.walk(args.input):
         for file in files:
-            if not file.endwith('vcf'): continue
+            if not file.endswith('vcf'): continue
             input_file = os.path.join(args.input, file)
             out_file = os.path.join(args.output, file.replace('vcf', 'vep.vcf'))
             sh_file = os.path.join(args.output, args.script_dir, file.replace('vcf','sh'))

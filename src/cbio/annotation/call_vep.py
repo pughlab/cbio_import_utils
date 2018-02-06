@@ -21,6 +21,8 @@ def get_options():
                         default='/mnt/work1/users/pughlab/references/VEP_fasta/87_GRCh37')
     parser.add_argument("-v", "--vep", type=int, required=False,
                         help="VEP version e.g 87", default=87)
+    parser.add_argument("-p", "--slots", type=int, required=False,
+                        help="number of slots", default=2)
     parser.add_argument("--offset", type=int, required=False,
                         help="offset for split large vcf file", default=1000)
     parser.add_argument("-t", "--debug", action="store_true",
@@ -89,6 +91,7 @@ def main():
         print (args)
 
     s = Template('variant_effect_predictor.pl \
+    --fork $slots \
     --merged  --offline  \
     --dir_cache  $cache_dir \
     --species homo_sapiens \
@@ -110,7 +113,8 @@ def main():
             d = dict(cache_dir=args.cache,
                      fasta=args.fasta,
                      infile=input_file,
-                     outfile=out_file)
+                     outfile=out_file,
+                     slots=args.slots)
             cmd = s.substitute(d)
             if args.debug:
                 print (cmd)

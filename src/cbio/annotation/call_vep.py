@@ -18,15 +18,20 @@ def get_options():
                         default='/mnt/work1/users/pughlab/references/VEP_fasta/83_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa')
     parser.add_argument("-c", "--cache", type=str, required=False,
                         help="reference genome cache directory",
-                        default='/mnt/work1/users/pughlab/references/VEP_fasta/87_GRCh37')
+                        default='/mnt/work1/users/pughlab/references/VEP_fasta/92_GRCh37')
+    parser.add_argument("-g", "--gnomad", type=str, required=False,
+                        help="Genome Aggregation Database (gnomAD) data",
+                        default='/mnt/work1/users/pughlab/references/gnomad/gnomad_v2.0.2/Exome/gnomad.exomes.r2.0.2.sites.vcf.gz')
     parser.add_argument("-v", "--vep", type=int, required=False,
-                        help="VEP version e.g 87", default=87)
-    parser.add_argument("-p", "--slots", type=int, required=False,
-                        help="number of slots", default=2)
+                        help="VEP version e.g 92", default=92)
+    parser.add_argument("--forks", type=int, required=False,
+                        help="number of forks", default=4)
     parser.add_argument("--offset", type=int, required=False,
                         help="offset for split large vcf file", default=1000)
-    parser.add_argument("-t", "--debug", action="store_true",
-                        help="debug mode for testing")
+    parser.add_argument("-t", "--split", action="store_true",
+                        help="split large vcf into smaller files")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="debug mode print commands")
     return parser.parse_args()
 
 
@@ -90,35 +95,56 @@ def main():
     if args.debug:
         print (args)
 
-    s = Template('variant_effect_predictor.pl \
-    --fork $slots \
-    --merged  --offline  \
-    --dir_cache  $cache_dir \
-    --species homo_sapiens \
-    --format vcf \
-    --fasta  $fasta \
-    --everything --force_overwrite  --vcf  \
-    -i $infile \
-    -o $outfile')
+    s = Template('variant_effect_predictor.pl\
+                --fork $forks\
+                --species homo_sapiens\
+                --offline\
+                --everything\
+                --shift_hgvs 1\
+                --check_existing\
+                --total_length\
+                --allele_number\
+                --no_escape\
+                --xref_refseq\
+                --buffer_size 256\
+                --dir $cache_dir\
+                --fasta $fasta\
+                --input_file $infile\
+                --force_overwrite\
+                --custom $gnomad,gnomAD,vcf,exact,0,AF_POPMAX,AF_AFR,AF_AMR,AF_ASJ,AF_EAS,AF_FIN,AF_NFE,AF_OTH,AF_SAS\
+                --vcf\
+                --output_file $outfile')
 
-    split_large_vcfs(args.input, args.offset)
+    if args.split:
+        split_large_vcfs(args.input, args.offset)
 
     for subdir, dirs, files in os.walk(args.input):
         for file in files:
-            print (file)
-            input_file = os.path.join(args.input, file)
-            out_file = os.path.join(args.output, file.replace('vcf', 'vep.vcf'))
-            sh_file = os.path.join(args.output, args.script_dir, file.replace('vcf','sh'))
+            if file.endswith(".vep.vcf"): continue
+            if file.endswith(".vcf"):
+                print (file)
+                input_file = os.path.join(args.input, file)
+                out_file = os.path.join(args.output, file.replace('vcf', 'vep.vcf'))
+                script_dir = os.path.join(args.output, args.script_dir)
+                if not os.path.exists(script_dir):
+                    try:
+                        os.mkdir(script_dir,0755)
+                    except OSError as e:
+                        print ("Error:Script directory exists")
 
-            d = dict(cache_dir=args.cache,
-                     fasta=args.fasta,
-                     infile=input_file,
-                     outfile=out_file,
-                     slots=args.slots)
-            cmd = s.substitute(d)
-            if args.debug:
-                print (cmd)
-            create_script(sh_file, cmd, args.vep)
+                sh_file = os.path.join(script_dir, file.replace('vcf','sh'))
+
+                d = dict(cache_dir=args.cache,
+                         fasta=args.fasta,
+                         infile=input_file,
+                         outfile=out_file,
+                         forks=args.forks,
+                         gnomad=args.gnomad)
+                cmd = s.substitute(d)
+                if args.debug:
+                    print (cmd)
+
+                create_script(sh_file, cmd, args.vep)
 
 if __name__ == "__main__":
     main()

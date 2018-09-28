@@ -28,20 +28,18 @@ def main():
                     for line in f.readlines()[2:]:
                         try:
                             parts = line.strip().split("\t")
-                            #print("length: 141=>%s" % len(parts))
-                            #keep n_alt_count sample less than 3
-                            if parts[44] and int(parts[44]) > 10: continue
-                            #keep ExAc less than 0.4%
-                            if parts[99] and float(parts[99])>= 0.004: continue
-                            #keep genomeAD less than 0.1%
-                            if parts[123] and float(parts[123]) >= 0.001: continue
                             for i in range(len(parts), 141):
                                 parts.append('NA')
-                            print (len(parts))
-                            print (parts)
+                            #print("length: 141=>%s" % len(parts))
+                            #keep n_alt_count sample less than 3
+                            if parts[44] != 'NA' and parts[44] and int(parts[44]) > 10: continue
+                            #keep ExAc less than 0.4%
+                            if parts[99] != 'NA' and parts[99] and float(parts[99])>= 0.004: continue
+                            #keep genomeAD less than 0.1%
+                            if parts[123] != 'NA' and parts[123] and float(parts[123]) >= 0.001: continue
                             of.write("%s\n"%"\t".join(parts))
                         except:
-                            print("Error length: 141=>%s" % len(parts))
+                            print("Error in length: 141=>%s" % len(parts))
                             count += 1
                             continue
     print ("total line skipped: %s"%count)

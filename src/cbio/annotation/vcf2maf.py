@@ -43,13 +43,22 @@ def get_sampleIDs_from_filename(sample_name, separator):
     except:
         return None, None
 
-def get_sampleIDs_from_header(vcf_file):
+def get_sampleIDs_from_oicr_vcf_header(vcf_file):
     try:
         p = subprocess.Popen(['grep', '##DCC=', vcf_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         parts = p.communicate()[0].split("\n")
         sample_id = parts[1].split("=")[2].replace(">", '')
         normal_id = parts[2].split("=")[2].replace(">", '')
         return sample_id, normal_id
+    except:
+        return None, None
+
+def get_sampleIDs_from_vcf_header(vcf_file):
+    try:
+        p = subprocess.Popen(['grep', '#CHROM', vcf_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        parts = p.communicate()[0].split("\n")
+        parts = parts[0].split("\t")
+        return (parts[-2],parts[-1])
     except:
         return None, None
 
@@ -86,9 +95,7 @@ def main():
                 if os.path.exists(maf_file): continue
                 vep_file = os.path.join(vep_dir, file)
                 print (vep_file)
-                sample_id, normal_id = get_sampleIDs_from_filename(file.split(".")[0], args.separator)
-                if not normal_id:
-                    sample_id, normal_id = get_sampleIDs_from_header(vep_file)
+                sample_id, normal_id = get_sampleIDs_from_vcf_header(vep_file)
                 if not normal_id: continue
                 print ("sample ID: {}".format(sample_id))
                 print ("matched normal ID: {}".format(normal_id))
@@ -96,7 +103,7 @@ def main():
                 d = dict(
                          species=args.species,
                          ncbi_build=args.ncbi_build,
-                         input_vcf = os.path.join(vep_dir, file.replace("vcf","vcf")),
+                         input_vcf = os.path.join(vep_dir, file),
                          out_maf = maf_file,
                          maf_center = args.maf_center,
                          vep_data=args.vep_data,
@@ -115,7 +122,7 @@ def main():
                         os.mkdir(script_dir,0755)
                     except OSError as e:
                         print ("Error:Script directory exists")
-                out_file = os.path.join(script_dir,"{}".format(file.replace('vep.vcf', 'sh')))
+                out_file = os.path.join(script_dir,"{}".format(file.replace('vcf', 'sh')))
                 with open(out_file, 'w') as of:
                     of.write("#!/bin/bash\n")
                     of.write("#$ -cwd\n")
